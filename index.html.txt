@@ -1,0 +1,637 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{
+ --bg:#f3f5f8;--card:#fff;--navy:#14283f;
+ --green:#16866b;--text:#253449;--muted:#778397;
+ --line:#e4e9ef;--red:#d75a5a;--gold:#d5a348;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+ font-family:Inter,Arial,sans-serif}
+header{background:var(--navy);color:white;padding:24px 5%}
+header h1{margin:0;font-size:25px;letter-spacing:1px}
+header p{color:#b8c8d8;font-size:12px;letter-spacing:2px}
+.layout{display:flex;min-height:100vh}
+nav{width:225px;background:#fff;padding:20px 12px;
+ border-right:1px solid var(--line)}
+nav button{display:block;width:100%;text-align:left;
+ background:transparent;border:0;padding:13px;
+ margin-bottom:5px;border-radius:8px;color:var(--text);
+ cursor:pointer;font-size:13px}
+nav button.active,nav button:hover{background:#eaf4f1;color:var(--green)}
+main{flex:1;padding:25px 3%;min-width:0}
+section{display:none}
+section.active{display:block}
+h2{font-size:21px;margin-top:0}
+h3{font-size:15px}
+.subtitle{color:var(--muted);font-size:13px;margin-top:-8px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.card{background:var(--card);border:1px solid var(--line);
+ border-radius:12px;padding:18px;margin-bottom:15px;min-width:0}
+.metric{font-size:25px;font-weight:700;margin:8px 0}
+.metric-label{font-size:12px;color:var(--muted)}
+.small{font-size:11px;color:var(--muted)}
+label{display:block;font-size:12px;font-weight:600;margin:12px 0 5px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);
+ border-radius:7px;background:white;font-size:13px;color:var(--text)}
+button.primary{background:var(--green);color:white;border:0;
+ border-radius:7px;padding:11px 17px;cursor:pointer}
+button.secondary{background:#eaf0f4;color:var(--text);border:0;
+ border-radius:7px;padding:10px 14px;cursor:pointer}
+button.danger{background:#fff0f0;color:var(--red);border:0;
+ padding:7px 10px;border-radius:6px;cursor:pointer}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+.alert{padding:12px;border-radius:8px;margin:9px 0;
+ background:#fff7e8;border-left:4px solid var(--gold);font-size:13px}
+.good{background:#eaf6f1;border-left-color:var(--green)}
+.bad{background:#fff0f0;border-left-color:var(--red)}
+.tag{padding:4px 8px;background:#edf2f6;border-radius:20px;font-size:11px}
+.progress{height:8px;background:#edf0f3;border-radius:10px;overflow:hidden}
+.progress div{height:100%;background:var(--green)}
+.chartbox{height:280px;position:relative}
+.upload{border:2px dashed #b9c9d2;padding:25px;text-align:center;
+ border-radius:10px;background:#f9fbfc;cursor:pointer}
+.upload img{max-width:100%;max-height:250px;margin-top:12px}
+footer{color:var(--muted);font-size:11px;text-align:center;padding:20px}
+@media(max-width:850px){
+ .layout{display:block}nav{width:100%;display:flex;overflow-x:auto;
+ border-right:0;border-bottom:1px solid var(--line)}
+ nav button{white-space:nowrap;width:auto}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ main{padding:18px 12px}
+}
+@media(max-width:500px){.grid,.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+ <h1>PORTFOLIO INTELLIGENCE</h1>
+ <p>INVESTMENT ANALYTICS · RISK MANAGEMENT · WEALTH PLANNING</p>
+</header>
+
+<div class="layout">
+<nav>
+ <button class="active" onclick="show('dashboard',this)">▦ Dashboard</button>
+ <button onclick="show('perfil',this)">♙ Perfil inversionista</button>
+ <button onclick="show('activos',this)">◈ Composición</button>
+ <button onclick="show('riesgo',this)">⬡ Riesgo y diversificación</button>
+ <button onclick="show('recomendaciones',this)">✧ Recomendaciones</button>
+ <button onclick="show('proyeccion',this)">↗ Proyecciones</button>
+ <button onclick="show('imagenes',this)">▧ Fotografías / OCR</button>
+ <button onclick="show('pendientes',this)">☷ Datos pendientes</button>
+</nav>
+
+<main>
+
+<!-- DASHBOARD -->
+<section id="dashboard" class="active">
+<h2>Investment Overview</h2>
+<p class="subtitle">Resumen consolidado de la cartera de inversión.</p>
+<div class="grid">
+ <div class="card"><div class="metric-label">Patrimonio invertido</div>
+ <div class="metric" id="total">$0</div><div class="small">Valor actual registrado</div></div>
+ <div class="card"><div class="metric-label">Rentabilidad ponderada</div>
+ <div class="metric" id="return">0%</div><div class="small">Según rentabilidades ingresadas</div></div>
+ <div class="card"><div class="metric-label">Ganancia / pérdida estimada</div>
+ <div class="metric" id="gain">$0</div><div class="small">Costo base estimado</div></div>
+ <div class="card"><div class="metric-label">Número de posiciones</div>
+ <div class="metric" id="count">0</div><div class="small">Instrumentos registrados</div></div>
+</div>
+<div class="grid2">
+ <div class="card"><h3>Asignación por categoría</h3>
+ <div class="chartbox"><canvas id="allocationChart"></canvas></div></div>
+ <div class="card"><h3>Rentabilidad por instrumento</h3>
+ <div class="chartbox"><canvas id="performanceChart"></canvas></div></div>
+</div>
+<div class="card">
+ <h3>Diagnóstico ejecutivo</h3>
+ <div id="executive">Registra tus activos y analiza tu portafolio.</div>
+</div>
+<div class="card">
+ <h3>Distribución geográfica</h3>
+ <div class="chartbox"><canvas id="geoChart"></canvas></div>
+</div>
+</section>
+
+<!-- PERFIL -->
+<section id="perfil">
+<h2>Investor Profile</h2>
+<p class="subtitle">Determina los objetivos y la capacidad de asumir riesgos.</p>
+<div class="card">
+<div class="grid2">
+ <div><label>Nombre o identificador</label><input id="investor" placeholder="Ej. Inversionista 01"></div>
+ <div><label>Edad</label><input id="age" type="number" min="18" max="110" placeholder="35"></div>
+ <div><label>País de residencia</label><input id="country" placeholder="Chile"></div>
+ <div><label>Moneda base</label><select id="currency">
+ <option>CLP</option><option>USD</option><option>EUR</option><option>UF</option></select></div>
+ <div><label>Horizonte de inversión (años)</label>
+ <input id="horizon" type="number" value="20" min="1"></div>
+ <div><label>Objetivo principal</label><select id="goal">
+ <option>Jubilación</option><option>Creación de patrimonio</option>
+ <option>Compra de vivienda</option><option>Educación</option>
+ <option>Ingresos pasivos</option><option>Preservación de capital</option>
+ <option>Otro</option></select></div>
+ <div><label>Tolerancia psicológica al riesgo</label>
+ <select id="tolerance"><option value="1">Muy baja</option>
+ <option value="2">Baja</option><option value="3" selected>Moderada</option>
+ <option value="4">Alta</option><option value="5">Muy alta</option></select></div>
+ <div><label>Capacidad financiera de asumir pérdidas</label>
+ <select id="capacity"><option value="1">Muy baja</option>
+ <option value="2">Baja</option><option value="3" selected>Moderada</option>
+ <option value="4">Alta</option><option value="5">Muy alta</option></select></div>
+ <div><label>Ingresos mensuales</label><input id="income" type="number" placeholder="0"></div>
+ <div><label>Aportes mensuales a inversiones</label><input id="contribution" type="number" value="0"></div>
+ <div><label>Fondo de emergencia (meses cubiertos)</label>
+ <input id="emergency" type="number" placeholder="6"></div>
+ <div><label>Deuda de alto costo</label><select id="debt">
+ <option value="no">No</option><option value="yes">Sí</option>
+ </select></div>
+</div>
+<label>Experiencia y conocimientos financieros</label>
+<select id="experience"><option>Principiante</option>
+<option>Intermedio</option><option>Avanzado</option></select>
+<label>¿Cómo reaccionaría ante una caída del 30%?</label>
+<select id="reaction"><option>Vendería todo</option>
+<option>Reduciría parte de la cartera</option>
+<option>Mantendría la inversión</option>
+<option>Invertiría más si mi situación lo permite</option></select>
+<div class="actions"><button class="primary" onclick="saveProfile()">Guardar perfil</button></div>
+<div id="profileResult"></div>
+</div>
+</section>
+
+<!-- ACTIVOS -->
+<section id="activos">
+<h2>Portfolio Composition</h2>
+<p class="subtitle">Agrega cualquier instrumento financiero.</p>
+<div class="card">
+<h3>Agregar instrumento</h3>
+<div class="grid2">
+ <div><label>Ticker / Identificador</label><input id="ticker" placeholder="VOO, AAPL, SQM..."></div>
+ <div><label>Nombre del activo</label><input id="assetName" placeholder="Vanguard S&P 500 ETF"></div>
+ <div><label>Tipo de activo</label><select id="category">
+ <option>ETF acciones</option><option>Acciones</option>
+ <option>ETF renta fija</option><option>Bonos</option>
+ <option>Fondos mutuos</option><option>Depósitos</option>
+ <option>Criptomonedas</option><option>Materias primas</option>
+ <option>Inmobiliario</option><option>Efectivo</option><option>Otros</option>
+ </select></div>
+ <div><label>Sector</label><input id="sector" placeholder="Tecnología, salud..."></div>
+ <div><label>País / Región</label><input id="region" placeholder="EE.UU., Global, Chile..."></div>
+ <div><label>Moneda</label><select id="assetCurrency">
+ <option>USD</option><option>CLP</option><option>EUR</option><option>UF</option></select></div>
+ <div><label>Valor actual en moneda base</label><input id="value" type="number" min="0" placeholder="1000000"></div>
+ <div><label>Rentabilidad acumulada (%)</label><input id="performance" type="number" step="0.01" placeholder="8.5"></div>
+ <div><label>Costo anual / TER (%)</label><input id="fee" type="number" step="0.01" placeholder="0.20"></div>
+ <div><label>Benchmark de referencia</label><input id="benchmark" placeholder="S&P 500"></div>
+ <div><label>Cuenta / Institución</label><input id="account" placeholder="Broker, APV, Fintual..."></div>
+ <div><label>¿Usa apalancamiento?</label><select id="leverage">
+ <option value="no">No</option><option value="yes">Sí</option></select></div>
+</div>
+<div class="actions">
+ <button class="primary" onclick="addAsset()">+ Incorporar activo</button>
+ <button class="secondary" onclick="clearForm()">Limpiar</button>
+</div>
+</div>
+<div class="card">
+<h3>Activos registrados</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Ticker</th><th>Activo</th><th>Categoría</th>
+<th>Valor</th><th>Peso</th><th>Rendimiento</th><th></th></tr></thead>
+<tbody id="assetRows"></tbody>
+</table></div>
+<div class="actions">
+<button class="secondary" onclick="exportData()">Exportar JSON</button>
+<button class="secondary" onclick="document.getElementById('importFile').click()">Importar JSON</button>
+<input id="importFile" type="file" accept=".json" hidden onchange="importData(event)">
+<button class="danger" onclick="resetAssets()">Eliminar todos los activos</button>
+</div>
+</div>
+</section>
+
+<!-- RIESGO -->
+<section id="riesgo">
+<h2>Risk & Diversification Analysis</h2>
+<p class="subtitle">Evaluación estructural de las exposiciones del portafolio.</p>
+<div class="grid">
+ <div class="card"><div class="metric-label">Mayor posición</div>
+ <div class="metric" id="largest">0%</div></div>
+ <div class="card"><div class="metric-label">Concentración HHI</div>
+ <div class="metric" id="hhi">0</div></div>
+ <div class="card"><div class="metric-label">ETF apalancados</div>
+ <div class="metric" id="leveraged">0</div></div>
+ <div class="card"><div class="metric-label">Costo anual ponderado</div>
+ <div class="metric" id="weightedFee">N/D</div></div>
+</div>
+<div class="grid2">
+ <div class="card"><h3>Concentración por sector</h3>
+ <div class="chartbox"><canvas id="sectorChart"></canvas></div></div>
+ <div class="card"><h3>Concentración geográfica</h3>
+ <div class="chartbox"><canvas id="geoRiskChart"></canvas></div></div>
+</div>
+<div class="card"><h3>Alertas estructurales</h3><div id="riskAlerts"></div></div>
+<div class="card">
+<h3>Indicadores avanzados pendientes</h3>
+<div id="advancedIndicators"></div>
+</div>
+</section>
+
+<!-- RECOMENDACIONES -->
+<section id="recomendaciones">
+<h2>Investment Recommendations</h2>
+<p class="subtitle">Recomendaciones generadas a partir de los datos registrados.</p>
+<div class="card">
+<button class="primary" onclick="analyze()">Analizar mi portafolio</button>
+<div id="recommendations" style="margin-top:15px">
+Completa los datos y ejecuta el análisis.
+</div>
+</div>
+<div class="card"><h3>Plan de acción</h3>
+<div id="actionPlan">El plan de acción aparecerá después del análisis.</div>
+</div>
+<div class="small">Las recomendaciones son alertas heurísticas, no asesoramiento financiero personalizado ni órdenes de compra o venta.</div>
+</section>
+
+<!-- PROYECCION -->
+<section id="proyeccion">
+<h2>Wealth Projection</h2>
+<p class="subtitle">Simulación del patrimonio futuro con aportes periódicos.</p>
+<div class="card">
+<div class="grid2">
+<div><label>Capital inicial</label><input id="initial" type="number" value="10000000"></div>
+<div><label>Aporte mensual</label><input id="monthly" type="number" value="500000"></div>
+<div><label>Rentabilidad anual esperada (%)</label><input id="rate" type="number" value="7" step="0.1"></div>
+<div><label>Inflación anual estimada (%)</label><input id="inflation" type="number" value="3" step="0.1"></div>
+<div><label>Horizonte (años)</label><input id="years" type="number" value="20"></div>
+</div>
+<button class="primary" onclick="project()">Calcular proyección</button>
+<div class="grid2" style="margin-top:15px">
+<div class="card"><div class="metric-label">Patrimonio nominal futuro</div>
+<div class="metric" id="futureValue">-</div></div>
+<div class="card"><div class="metric-label">Valor real estimado</div>
+<div class="metric" id="realValue">-</div></div>
+</div>
+<div class="chartbox"><canvas id="projectionChart"></canvas></div>
+<div id="projectionNote" class="small"></div>
+</div>
+</section>
+
+<!-- IMAGENES -->
+<section id="imagenes">
+<h2>Portfolio Scanner</h2>
+<p class="subtitle">Carga fotografías o capturas de tu broker o plataforma de inversión.</p>
+<div class="card">
+<div class="upload" onclick="document.getElementById('photo').click()">
+<icon> </icon>
+<h3>Subir imágenes del portafolio</h3>
+<p class="small">PNG, JPG o JPEG. Puedes cargar varias fotografías.</p>
+<input id="photo" type="file" accept="image/*" multiple hidden onchange="previewImages(event)">
+</div>
+<div id="previews"></div>
+<button class="primary" onclick="runOCR()">Extraer texto de imágenes</button>
+<div id="ocrStatus" class="small"></div>
+<label>Texto reconocido (revisa y corrige antes de usarlo)</label>
+<textarea id="ocrText" rows="10" placeholder="Aquí aparecerá el texto reconocido..."></textarea>
+<div class="actions">
+<button class="secondary" onclick="copyOCR()">Copiar texto</button>
+<button class="secondary" onclick="document.getElementById('ocrText').value=''">Limpiar</button>
+</div>
+<div class="alert">Privacidad: las imágenes se procesan en el navegador mediante una biblioteca externa. No subas documentos con números de cuenta, credenciales ni información personal sensible.</div>
+</div>
+</section>
+
+<!-- PENDIENTES -->
+<section id="pendientes">
+<h2>Missing Information</h2>
+<p class="subtitle">Datos necesarios para aumentar la calidad y precisión del diagnóstico.</p>
+<div class="card">
+<h3>Checklist de información</h3>
+<div id="missingList"></div>
+<h3 style="margin-top:22px">Datos adicionales</h3>
+<label>Deudas y obligaciones</label>
+<textarea id="liabilities" rows="2" placeholder="Deudas, tasas y vencimientos..."></textarea>
+<label>Necesidades de liquidez</label>
+<textarea id="liquidity" rows="2" placeholder="Capital que podría necesitar y cuándo..."></textarea>
+<label>Restricciones de inversión</label>
+<textarea id="restrictions" rows="2" placeholder="Países, sectores, productos que no desea..."></textarea>
+<label>Información adicional</label>
+<textarea id="notes" rows="3" placeholder="Cualquier otro dato relevante..."></textarea>
+<button class="primary" onclick="saveExtra()">Guardar información</button>
+</div>
+<div class="card"><h3>Calidad del análisis</h3>
+<div class="metric" id="completeness">0%</div>
+<div class="progress"><div id="completeBar" style="width:0%"></div></div>
+<p class="small">La completitud mide la presencia de datos básicos, no garantiza exactitud ni suficiencia financiera.</p>
+</div>
+</section>
+
+<footer>PORTFOLIO INTELLIGENCE · Herramienta educativa de análisis financiero · Versión 1.0</footer>
+</main>
+</div>
+
+<script>
+let assets=JSON.parse(localStorage.getItem('pi_assets')||'[]');
+let profile=JSON.parse(localStorage.getItem('pi_profile')||'{}');
+let extra=JSON.parse(localStorage.getItem('pi_extra')||'{}');
+let charts={};
+
+function show(id,btn){
+ document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+ if(id==='dashboard'||id==='riesgo') refresh();
+ if(id==='pendientes') missing();
+}
+function currency(){
+ return document.getElementById('currency')?.value||'CLP';
+}
+function money(v){
+ return new Intl.NumberFormat('es-CL',{style:'currency',currency:currency(),
+ maximumFractionDigits:0}).format(v||0);
+}
+function pct(v){return (v||0).toFixed(2)+'%'}
+function save(){
+ localStorage.setItem('pi_assets',JSON.stringify(assets));
+}
+function addAsset(){
+ let ticker=document.getElementById('ticker').value.trim().toUpperCase();
+ let name=document.getElementById('assetName').value.trim();
+ let value=Number(document.getElementById('value').value);
+ if(!ticker||!name||!Number.isFinite(value)||value<=0){
+ alert('Ingresa ticker, nombre y un valor actual mayor que cero.');return;
+ }
+ assets.push({
+ id:Date.now(),ticker,name,
+ category:document.getElementById('category').value,
+ sector:document.getElementById('sector').value||'No informado',
+ region:document.getElementById('region').value||'No informado',
+ currency:document.getElementById('assetCurrency').value,
+ value,performance:Number(document.getElementById('performance').value)||0,
+ fee:Number(document.getElementById('fee').value)||0,
+ benchmark:document.getElementById('benchmark').value,
+ account:document.getElementById('account').value,
+ leverage:document.getElementById('leverage').value
+ });
+ save();clearForm();render();refresh();
+}
+function clearForm(){
+ ['ticker','assetName','sector','region','value','performance','fee',
+ 'benchmark','account'].forEach(id=>document.getElementById(id).value='');
+}
+function removeAsset(id){
+ assets=assets.filter(a=>a.id!==id);save();render();refresh();
+}
+function total(){return assets.reduce((s,a)=>s+a.value,0)}
+function weight(a){return total()?a.value/total()*100:0}
+function render(){
+ document.getElementById('assetRows').innerHTML=assets.map(a=>`
+ <tr><td><b>${esc(a.ticker)}</b></td><td>${esc(a.name)}</td>
+ <td>${esc(a.category)}</td><td>${money(a.value)}</td>
+ <td>${pct(weight(a))}</td><td>${pct(a.performance)}</td>
+ <td><button class="danger" onclick="removeAsset(${a.id})">×</button></td></tr>
+ `).join('');
+}
+function esc(s){
+ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function groupBy(field){
+ let o={};assets.forEach(a=>{let k=a[field]||'No informado';o[k]=(o[k]||0)+weight(a)});
+ return o;
+}
+function draw(id,type,labels,data){
+ if(charts[id])charts[id].destroy();
+ let canvas=document.getElementById(id);
+ if(!canvas)return;
+ charts[id]=new Chart(canvas,{
+ type,data:{labels,datasets:[{data,label:'Peso (%)',
+ backgroundColor:['#16866b','#315b85','#d5a348','#9878bc',
+ '#dc7777','#65a9bd','#8b9b83','#b4a0a0','#66768a'],
+ borderWidth:1}]},
+ options:{responsive:true,maintainAspectRatio:false,
+ plugins:{legend:{position:type==='bar'?'bottom':'right'}},
+ scales:type==='bar'?{y:{beginAtZero:true}}:{}}
+ });
+}
+function refresh(){
+ let t=total();
+ let weightedReturn=t?assets.reduce((s,a)=>s+a.value*a.performance/100,0)/t*100:0;
+ let gain=t?assets.reduce((s,a)=>s+a.value*(a.performance/(100+a.performance)),0):0;
+ document.getElementById('total').textContent=money(t);
+ document.getElementById('return').textContent=pct(weightedReturn);
+ document.getElementById('gain').textContent=money(gain);
+ document.getElementById('count').textContent=assets.length;
+ draw('allocationChart','doughnut',Object.keys(groupBy('category')),Object.values(groupBy('category')));
+ draw('performanceChart','bar',assets.map(a=>a.ticker),assets.map(a=>a.performance));
+ draw('geoChart','doughnut',Object.keys(groupBy('region')),Object.values(groupBy('region')));
+ let sorted=[...assets].sort((a,b)=>b.value-a.value);
+ document.getElementById('largest').textContent=pct(sorted[0]?weight(sorted[0]):0);
+ let hhi=assets.reduce((s,a)=>s+Math.pow(weight(a),2),0);
+ document.getElementById('hhi').textContent=hhi.toFixed(0);
+ document.getElementById('leveraged').textContent=assets.filter(a=>a.leverage==='yes').length;
+ let fees=assets.reduce((s,a)=>s+a.value*a.fee,0);
+ document.getElementById('weightedFee').textContent=t?pct(fees/t):'N/D';
+ draw('sectorChart','doughnut',Object.keys(groupBy('sector')),Object.values(groupBy('sector')));
+ draw('geoRiskChart','doughnut',Object.keys(groupBy('region')),Object.values(groupBy('region')));
+ let top=sorted[0];
+ document.getElementById('executive').innerHTML=assets.length?
+ `<div class="alert good">Se registraron ${assets.length} posiciones, con un valor total de ${money(t)}.</div>
+ <div class="alert">La mayor posición es ${esc(top.ticker)}, con ${pct(weight(top))} del portafolio.</div>
+ <div class="alert">Rentabilidad ponderada informada: ${pct(weightedReturn)}. Este indicador no reemplaza la TIR ni la rentabilidad ponderada por tiempo.</div>`
+ :'No hay activos registrados.';
+ document.getElementById('riskAlerts').innerHTML=assets.length?
+ alertsHTML():'Incorpora activos para calcular alertas.';
+ document.getElementById('advancedIndicators').innerHTML=
+ '<div class="alert">Volatilidad, Sharpe, beta, correlación y máximo drawdown requieren series históricas de precios, benchmark y fechas. No se deben inferir a partir de la rentabilidad acumulada.</div>';
+}
+function alertsHTML(){
+ let out=[];
+ let top=[...assets].sort((a,b)=>weight(b)-weight(a))[0];
+ if(top&&weight(top)>25)out.push(['bad','Concentración individual: '+top.ticker+' representa '+pct(weight(top))+'.']);
+ let sectors=groupBy('sector');
+ Object.entries(sectors).forEach(([s,v])=>{
+ if(s!=='No informado'&&v>30)out.push(['bad','Concentración sectorial: '+s+' representa '+pct(v)+'.']);
+ });
+ let lev=assets.filter(a=>a.leverage==='yes');
+ if(lev.length)out.push(['bad','Se identificaron instrumentos apalancados. Revisar objetivo diario, costos y riesgo de pérdida.']);
+ let fees=assets.filter(a=>a.fee>1);
+ if(fees.length)out.push(['','Hay instrumentos con costos anuales declarados superiores al 1%. Verificar TER y comisiones.']);
+ if(!out.length)out.push(['good','No se detectaron alertas básicas de concentración con los umbrales utilizados. Esto no significa que la cartera sea de bajo riesgo.']);
+ return out.map(x=>`<div class="alert ${x[0]}">${x[1]}</div>`).join('');
+}
+function saveProfile(){
+ profile={};
+ ['investor','age','country','currency','horizon','goal','tolerance',
+ 'capacity','income','contribution','emergency','debt','experience','reaction']
+ .forEach(id=>profile[id]=document.getElementById(id).value);
+ localStorage.setItem('pi_profile',JSON.stringify(profile));
+ document.getElementById('profileResult').innerHTML=
+ '<div class="alert good">Perfil guardado en este navegador.</div>';
+ missing();
+}
+function analyze(){
+ refresh();
+ let r=[];
+ if(!assets.length)r.push('No hay activos. Registra instrumentos antes de emitir un diagnóstico.');
+ let h=Number(profile.horizon||0),tol=Number(profile.tolerance||3),
+ cap=Number(profile.capacity||3);
+ if(h&&h<5&&assets.some(a=>a.category.includes('acciones')||a.category==='Acciones'))
+ r.push('Horizonte corto: revisar si la exposición a renta variable es compatible con las necesidades de liquidez.');
+ if(tol!==cap)r.push('Existe una diferencia entre tolerancia psicológica y capacidad financiera. Conviene utilizar la dimensión más restrictiva para definir el riesgo asumible.');
+ if(assets.some(a=>a.leverage==='yes'))r.push('Reducir la dependencia de instrumentos apalancados en el núcleo patrimonial.');
+ if(assets.filter(a=>a.category.includes('ETF')).length>1)
+ r.push('Revisar solapamientos entre ETF y exposición indirecta a las mismas empresas.');
+ if(assets.some(a=>weight(a)>20))
+ r.push('Evaluar concentración por posición y considerar límites por emisor.');
+ if(assets.some(a=>a.performance< -20))
+ r.push('Revisar los activos con pérdidas superiores al 20% mediante análisis fundamental; no vender automáticamente por pérdidas.');
+ if(assets.some(a=>a.fee>1))
+ r.push('Comparar costos de los instrumentos con alternativas equivalentes.');
+ if(profile.debt==='yes')r.push('Priorizar evaluación de deuda de alto costo antes de incrementar riesgo de inversión.');
+ if(Number(profile.emergency||0)<3)
+ r.push('Revisar fondo de emergencia y liquidez antes de asumir mayor exposición a activos volátiles.');
+ if(!r.length)r.push('No hay alertas automáticas adicionales. Se necesita información histórica y contextual para un diagnóstico completo.');
+ document.getElementById('recommendations').innerHTML=r.map((x,i)=>
+ `<div class="alert">${i+1}. ${x}</div>`).join('');
+ document.getElementById('actionPlan').innerHTML=[
+ '1. Completar los datos faltantes y verificar los valores registrados.',
+ '2. Revisar solapamientos, concentración y costos.',
+ '3. Definir una asignación objetivo compatible con el perfil.',
+ '4. Establecer reglas de rebalanceo y revisar periódicamente.'
+ ].map(x=>`<div class="alert">${x}</div>`).join('');
+}
+function project(){
+ let initial=Number(document.getElementById('initial').value)||0;
+ let monthly=Number(document.getElementById('monthly').value)||0;
+ let rate=Number(document.getElementById('rate').value)/100;
+ let inf=Number(document.getElementById('inflation').value)/100;
+ let years=Math.max(1,Math.min(100,Number(document.getElementById('years').value)||1));
+ if(rate<=-1||inf<=-1){alert('Revisa las tasas ingresadas.');return;}
+ let labels=[],values=[],capital=initial;
+ for(let y=0;y<=years;y++){
+  if(y>0){
+   let rm=Math.pow(1+rate,1/12)-1;
+   for(let m=0;m<12;m++)capital=capital*(1+rm)+monthly;
+  }
+  labels.push('Año '+y);values.push(Math.round(capital));
+ }
+ let future=capital,real=future/Math.pow(1+inf,years);
+ document.getElementById('futureValue').textContent=money(future);
+ document.getElementById('realValue').textContent=money(real);
+ document.getElementById('projectionNote').textContent=
+ 'Simulación nominal con tasa constante, aportes al final de cada mes e inflación constante. No incluye impuestos, comisiones ni variaciones del mercado. No es una predicción.';
+ if(charts.projectionChart)charts.projectionChart.destroy();
+ charts.projectionChart=new Chart(document.getElementById('projectionChart'),{
+ type:'line',data:{labels,datasets:[{label:'Patrimonio estimado',data:values,
+ borderColor:'#16866b',backgroundColor:'rgba(22,134,107,.12)',fill:true,tension:.3}]},
+ options:{responsive:true,maintainAspectRatio:false}
+ });
+}
+function missing(){
+ let checks=[
+ ['Perfil del inversionista',!!profile.age&&!!profile.horizon],
+ ['País y moneda base',!!profile.country&&!!profile.currency],
+ ['Objetivo de inversión',!!profile.goal],
+ ['Tolerancia y capacidad de riesgo',!!profile.tolerance&&!!profile.capacity],
+ ['Activos y valores actuales',assets.length>0],
+ ['Rentabilidad por activo',assets.length>0&&assets.every(a=>a.performance!==null)],
+ ['Sector y región',assets.length>0&&assets.every(a=>a.region!=='No informado'&&a.sector!=='No informado')],
+ ['Comisiones',assets.length>0&&assets.every(a=>a.fee>0)],
+ ['Aportes y liquidez',!!profile.contribution&&!!profile.emergency],
+ ['Deudas y restricciones',!!extra.liabilities&&!!extra.restrictions]
+ ];
+ let n=checks.filter(x=>x[1]).length;
+ let p=Math.round(n/checks.length*100);
+ document.getElementById('missingList').innerHTML=checks.map(x=>
+ `<div style="padding:8px;border-bottom:1px solid #eee">
+ ${x[1]?'✓':'○'} ${x[0]} <span class="tag">${x[1]?'Completo':'Pendiente'}</span></div>`
+ ).join('');
+ document.getElementById('completeness').textContent=p+'%';
+ document.getElementById('completeBar').style.width=p+'%';
+}
+function saveExtra(){
+ extra={};
+ ['liabilities','liquidity','restrictions','notes'].forEach(id=>
+ extra[id]=document.getElementById(id).value);
+ localStorage.setItem('pi_extra',JSON.stringify(extra));missing();
+}
+function exportData(){
+ let data={profile,assets,extra,exportDate:new Date().toISOString()};
+ let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ let a=document.createElement('a');a.href=URL.createObjectURL(blob);
+ a.download='portfolio_intelligence.json';a.click();
+ URL.revokeObjectURL(a.href);
+}
+function importData(e){
+ let f=e.target.files[0];if(!f)return;
+ let reader=new FileReader();
+ reader.onload=()=>{
+ try{
+ let d=JSON.parse(reader.result);
+ if(!Array.isArray(d.assets))throw Error();
+ assets=d.assets;profile=d.profile||{};extra=d.extra||{};
+ save();localStorage.setItem('pi_profile',JSON.stringify(profile));
+ localStorage.setItem('pi_extra',JSON.stringify(extra));
+ render();refresh();missing();alert('Datos importados.');
+ }catch(err){alert('Archivo JSON inválido.');}
+ };
+ reader.readAsText(f);
+}
+function resetAssets(){
+ if(confirm('¿Eliminar todas las posiciones? Exporta primero si necesitas conservarlas.')){
+ assets=[];save();render();refresh();missing();
+ }
+}
+let images=[];
+function previewImages(e){
+ images=[...e.target.files];
+ document.getElementById('previews').innerHTML=images.map(f=>{
+ let u=URL.createObjectURL(f);
+ return `<img src="${u}" alt="Vista previa" style="max-width:140px;max-height:130px;margin:10px;border-radius:8px">`;
+ }).join('');
+}
+async function runOCR(){
+ if(!images.length){alert('Primero carga una imagen.');return;}
+ let out=document.getElementById('ocrText');
+ let status=document.getElementById('ocrStatus');
+ out.value='';
+ for(let i=0;i<images.length;i++){
+  status.textContent='Procesando imagen '+(i+1)+' de '+images.length+'...';
+  try{
+   let result=await Tesseract.recognize(images[i],'eng+spa');
+   out.value+='\n--- Imagen '+(i+1)+' ---\n'+result.data.text+'\n';
+  }catch(e){out.value+='\nNo se pudo leer imagen '+(i+1);}
+ }
+ status.textContent='Extracción terminada. Comprueba los datos manualmente.';
+}
+function copyOCR(){
+ navigator.clipboard.writeText(document.getElementById('ocrText').value)
+ .then(()=>alert('Texto copiado.'))
+ .catch(()=>alert('No se pudo copiar automáticamente.'));
+}
+function loadProfile(){
+ Object.keys(profile).forEach(id=>{
+ let el=document.getElementById(id);if(el)el.value=profile[id];
+ });
+ Object.keys(extra).forEach(id=>{
+ let el=document.getElementById(id);if(el)el.value=extra[id];
+ });
+}
+render();loadProfile();refresh();missing();project();
+</script>
+</body>
+</html>
